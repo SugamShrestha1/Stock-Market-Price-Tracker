@@ -56,6 +56,12 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 
+# External API Configuration
+FINNHUB_API_KEY = os.getenv('FINNHUB_API_KEY')
+
+#External API Configuration for Alpha Vantage
+ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
+
 
 # Application definition
 

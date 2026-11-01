@@ -1,4 +1,6 @@
+import requests
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.pagination import PageNumberPagination
@@ -7,7 +9,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Stock
-from .serializers import StockSerializer
+from .serializers import StockPriceSerializer, StockSerializer
+from .services import get_current_price, get_historical_prices
 
 
 class StockListView(ListAPIView):
@@ -52,6 +55,80 @@ class StockDetailView(RetrieveAPIView):
     queryset = Stock.objects.all()
     serializer_class = StockSerializer
     permission_classes = [AllowAny]
+
+
+class StockQuoteView(APIView):
+    """Fetch the latest quote for a stock symbol."""
+    permission_classes = [AllowAny]
+
+    def get(self, request, symbol):
+        try:
+            quote = get_current_price(symbol)
+            return Response(quote, status=status.HTTP_200_OK)
+        except ValueError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except requests.RequestException:
+            return Response(
+                {"error": "Unable to fetch stock data from Finnhub."},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
+
+
+class StockHistoricalDataView(APIView):
+    """Fetch historical candle data for a stock symbol."""
+    permission_classes = [AllowAny]
+
+    def get(self, request, symbol):
+        resolution = request.query_params.get('resolution', 'D') or 'D'
+        from_param = request.query_params.get('from')
+        to_param = request.query_params.get('to')
+
+        if not from_param or not to_param:
+            return Response(
+                {"error": "Both 'from' and 'to' query parameters are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            from_timestamp = int(from_param)
+            to_timestamp = int(to_param)
+        except (TypeError, ValueError):
+            return Response(
+                {"error": "'from' and 'to' must be valid Unix timestamps."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if from_timestamp >= to_timestamp:
+            return Response(
+                {"error": "'from' must be earlier than 'to'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            historical_data = get_historical_prices(
+                symbol=symbol,
+                resolution=resolution,
+                from_timestamp=from_timestamp,
+                to_timestamp=to_timestamp,
+            )
+            return Response(historical_data, status=status.HTTP_200_OK)
+        except ValueError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except requests.RequestException:
+            return Response(
+                {"error": "The Finnhub service is unavailable."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+
+class StockPriceHistoryView(ListAPIView):
+    """List historical price records for a stock."""
+    serializer_class = StockPriceSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        stock = get_object_or_404(Stock, pk=self.kwargs.get('pk'))
+        return stock.price_history.all().order_by('recorded_at')
 
 
 class HomeView(APIView):

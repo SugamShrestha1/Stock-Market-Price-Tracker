@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.test import TestCase
 
 from .models import Stock
@@ -80,4 +82,23 @@ class StockAPITests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('next', response.json())
         self.assertEqual(len(response.json()['results']), 10)
+
+    @patch('StockTracker.stocks.views.get_current_price')
+    def test_get_stock_quote(self, mock_get_current_price):
+        mock_get_current_price.return_value = {
+            'symbol': 'AAPL',
+            'current_price': 344.63,
+            'change': -4.28,
+            'percentage_change': -1.2267,
+            'high': 349.19,
+            'low': 334.35,
+            'open': 346.715,
+            'previous_close': 348.91,
+        }
+
+        response = self.client.get('/api/stocks/AAPL/quote/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['symbol'], 'AAPL')
+        self.assertEqual(response.json()['current_price'], 344.63)
 

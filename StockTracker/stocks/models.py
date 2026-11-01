@@ -16,3 +16,24 @@ class Stock(models.Model):
 
     def __str__(self):
         return f"{self.symbol} - {self.company_name}"
+
+
+class StockPrice(models.Model):
+    stock = models.ForeignKey(
+        Stock,
+        on_delete=models.CASCADE,
+        related_name='price_history'
+    )
+    open_price = models.DecimalField(max_digits=15, decimal_places=4)
+    close_price = models.DecimalField(max_digits=15, decimal_places=4)
+    high_price = models.DecimalField(max_digits=15, decimal_places=4)
+    low_price = models.DecimalField(max_digits=15, decimal_places=4)
+    volume = models.BigIntegerField(null=True, blank=True)
+    recorded_at = models.DateTimeField()
+
+    class Meta:
+        verbose_name = 'Stock Price'
+        verbose_name_plural = 'Stock Prices'
+
+    def __str__(self):
+        return f"{self.stock.symbol} - {self.recorded_at.date()}"
