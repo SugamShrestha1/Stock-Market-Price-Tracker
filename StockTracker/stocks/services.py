@@ -50,6 +50,8 @@ def get_historical_prices(symbol, resolution, from_timestamp, to_timestamp):
     Fetch daily historical candle data from Alpha Vantage for a stock symbol.
     Example: get_historical_prices("AAPL", "D", 1690000000, 1695000000)
     """
+    normalized_symbol = symbol.upper()
+
     if resolution is None or str(resolution).upper() != "D":
         raise ValueError("Unsupported resolution. Only daily resolution 'D' is supported.")
 
@@ -60,7 +62,7 @@ def get_historical_prices(symbol, resolution, from_timestamp, to_timestamp):
 
     params = {
         "function": "TIME_SERIES_DAILY",
-        "symbol": symbol.upper(),
+        "symbol": normalized_symbol,
         "outputsize": "compact",
         "apikey": settings.ALPHA_VANTAGE_API_KEY,
     }
@@ -81,7 +83,7 @@ def get_historical_prices(symbol, resolution, from_timestamp, to_timestamp):
 
     time_series = data.get("Time Series (Daily)")
     if not isinstance(time_series, dict) or not time_series:
-        raise ValueError(f"No historical data available for {symbol}.")
+        raise ValueError(f"No historical data available for {normalized_symbol}.")
 
     from datetime import datetime, timezone
 
@@ -114,6 +116,6 @@ def get_historical_prices(symbol, resolution, from_timestamp, to_timestamp):
         )
 
     if not records:
-        raise ValueError(f"No historical data available for {symbol} in the requested date range.")
+        raise ValueError(f"No historical data available for {normalized_symbol} in the requested date range.")
 
     return sorted(records, key=lambda item: item["timestamp"])

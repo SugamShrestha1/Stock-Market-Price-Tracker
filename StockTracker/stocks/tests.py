@@ -102,3 +102,82 @@ class StockAPITests(TestCase):
         self.assertEqual(response.json()['symbol'], 'AAPL')
         self.assertEqual(response.json()['current_price'], 344.63)
 
+
+class HistoricalStockAPITests(TestCase):
+
+    @patch('StockTracker.stocks.views.get_historical_prices')
+    def test_get_historical_prices(self, mock_get_historical_prices):
+        mock_get_historical_prices.return_value = [
+            {
+                'open_price': 250.00,
+                'high_price': 255.00,
+                'low_price': 248.00,
+                'close_price': 253.00,
+                'volume': 30000000,
+                'timestamp': 1790899200,
+            }
+        ]
+
+        response = self.client.get(
+            '/api/stocks/AAPL/history/?resolution=D&from=1790860897&to=1793452897'
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(response.json()[0]['close_price'], 253.00)
+
+        mock_get_historical_prices.assert_called_once()
+
+    def test_historical_prices_missing_from(self):
+        response = self.client.get(
+            '/api/stocks/AAPL/history/?resolution=D&to=1793452897'
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_historical_prices_missing_to(self):
+        response = self.client.get(
+            '/api/stocks/AAPL/history/?resolution=D&from=1790860897'
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_historical_prices_invalid_timestamp(self):
+        response = self.client.get(
+            '/api/stocks/AAPL/history/?resolution=D&from=invalid&to=1793452897'
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_historical_prices_invalid_date_range(self):
+        response = self.client.get(
+            '/api/stocks/AAPL/history/?resolution=D&from=1793452897&to=1790860897'
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    @patch('StockTracker.stocks.views.get_historical_prices')
+    def test_historical_prices_unsupported_resolution(self, mock_get_historical_prices):
+        mock_get_historical_prices.side_effect = ValueError(
+            "Unsupported resolution."
+        )
+
+        response = self.client.get(
+            '/api/stocks/AAPL/history/?resolution=W&from=1790860897&to=1793452897'
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    @patch('StockTracker.stocks.views.get_historical_prices')
+    def test_historical_prices_external_api_failure(self, mock_get_historical_prices):
+        import requests
+
+        mock_get_historical_prices.side_effect = requests.RequestException(
+            "External API unavailable."
+        )
+
+        response = self.client.get(
+            '/api/stocks/AAPL/history/?resolution=D&from=1790860897&to=1793452897'
+        )
+
+        self.assertEqual(response.status_code, 502)

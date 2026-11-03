@@ -24,4 +24,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('StockTracker.accounts.urls')),
     path('api/', include('StockTracker.stocks.urls')),
+    path('api/', include('StockTracker.watchlist.urls')),
 ]

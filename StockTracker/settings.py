@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'StockTracker.accounts.apps.AccountsConfig',
     'StockTracker.stocks.apps.StocksConfig',
+    'StockTracker.watchlist.apps.WatchlistConfig',
 ]
 
 MIDDLEWARE = [
