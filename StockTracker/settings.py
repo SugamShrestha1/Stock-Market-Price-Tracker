@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     'StockTracker.accounts.apps.AccountsConfig',
     'StockTracker.stocks.apps.StocksConfig',
     'StockTracker.watchlist.apps.WatchlistConfig',
+    'StockTracker.portfolio.apps.PortfolioConfig',
 ]
 
 MIDDLEWARE = [

@@ -25,4 +25,5 @@ urlpatterns = [
     path('api/', include('StockTracker.accounts.urls')),
     path('api/', include('StockTracker.stocks.urls')),
     path('api/', include('StockTracker.watchlist.urls')),
+    path('api/', include('StockTracker.portfolio.urls')),
 ]
